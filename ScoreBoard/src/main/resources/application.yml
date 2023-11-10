@@ -1,0 +1,6 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb+srv://magesunny:qiang2ge1@cluster0.ohqlrqv.mongodb.net/?retryWrites=true&w=majority
+      database: sunny
+

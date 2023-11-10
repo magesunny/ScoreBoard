@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/charts.css/dist/charts.min.css">
+<style>
+    body {
+        font-family: 'Raleway', 'Noto Sans TC', sans-serif;
+        background: #8c979b;
+        background: -webkit-linear-gradient(to right, #939ea2, #7c8388);
+        background: linear-gradient(to right, #9fa5a8, #7e8591);
+        height: 100vh;
+        font-weight: 300;
+    }
+
+    {
+        box-sizing: border-box
+    ;
+    }
+
+    input {
+        width: 80px;
+    }
+    #chart {
+        width: 100%;
+        max-width: 300px;
+        margin: 0 auto;
+    }
+
+    #chart .bar {
+        --aspect-ratio: 2/1;
+    }
+
+</style>
+<head>
+    <meta charset="UTF-8">
+    <title>計分器</title>
+</head>
+<body>
+<div>
+    <div class="inputArea">
+        <label>玩家
+            <select id="select"></select>
+        </label>
+        <label>分數
+            <input id="score" type="number" class="input">
+        </label>
+        <button onclick="upload()">更新</button>
+
+        <input id="newUser" class="input">
+        <button onclick="newUser()">新增玩家</button>
+    </div>
+
+    <div id="chart">
+        <table class="charts-css bar data-spacing-5 show-labels">
+            <tbody id="winner">
+            </tbody>
+        </table>
+        <table class="charts-css bar show-labels data-spacing-5 reverse">
+            <tbody id="loser"></tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.20.0/axios.min.js"></script>
+<script>
+    window.addEventListener('load',showResult)
+    userList();
+    function userList(){
+        axios.get('http://localhost:8080/userList')
+            .then(res=>{
+                let jsonList=JSON.stringify(res.data);
+                let jsonList2=JSON.parse(jsonList);
+                let userList=jsonList2[0].userList;
+                console.log(userList);
+                for (let i = 0;i<userList.length;i++) {
+                    let options = document.createElement("option");
+                    let name = document.createTextNode(userList[i]);
+                    options.appendChild(name)
+                    document.getElementById("select").appendChild(options)
+                }
+            })
+    }
+
+    function upload() {
+        let name = document.getElementById('select');
+        let score = document.getElementById('score');
+        let array = {}
+        array["name"] = name.value;
+        array["score"] = score.value;
+        let jsonArray = JSON.stringify(array)
+        const headers = {'Content-Type': 'application/json'}
+        axios.post("http://localhost:8080/insert", jsonArray,
+            {headers: headers})
+            .then(res=>{
+                window.location.reload();
+        })
+
+    }
+
+    function showResult() {
+        let winner=document.getElementById("winner");
+        let loser=document.getElementById("loser");
+        axios.get("http://localhost:8080/getTotalByName")
+            .then(res => {
+                let results = JSON.stringify(res.data)
+                let totalArray = JSON.parse(results)
+                let barLength = totalArray[0].totalScore;
+                console.log(results)
+                for (let i = 0; i < totalArray.length; i++) {
+                    let tr = document.createElement("tr")
+                    let td = document.createElement("td");
+                    let liValue = totalArray[i].name + "  \u00a0\u00a0\u00a0\u00a0  " + totalArray[i].totalScore;
+                    let task = document.createTextNode(liValue);
+                    tr.append(task);
+                    let size = (totalArray[i].totalScore/barLength);
+                    if (totalArray[i].totalScore < 0) {
+                        let absSize = Math.abs(size);
+                        td.style.cssText = "--size:" + absSize;
+                        tr.appendChild(td);
+                        loser.appendChild(tr);
+                    } else{
+                        td.style.cssText ="--size:" + size;
+                        tr.appendChild(td);
+                        winner.appendChild(tr);
+                    }
+                }
+            })
+    }
+
+    function newUser(){
+        let newUser = document.getElementById("newUser").value;
+        axios.post("http://localhost:8080/newUser",newUser,{
+            headers: {
+            'Content-Type': 'text/plain'
+            }
+        })
+        setTimeout("500",userList);
+    }
+
+</script>
